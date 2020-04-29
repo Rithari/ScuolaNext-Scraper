@@ -10,50 +10,59 @@ import validators
 import time
 import requests
 import os
-import mysql.connector
+from configparser import ConfigParser
+import tkinter
+from tkinter import messagebox
+import sys
+
+# Load the config 
+configReader = ConfigParser()
+configReader.read('config.ini')
+
+if not os.path.exists('config.ini'):
+    # This code is to hide the main tkinter window
+    root = tkinter.Tk()
+    root.withdraw()
+    messagebox.showinfo("Error", "You must set up a config.ini file.\nCheck out the GitHub repo for a guide.")
+    exit("No config file.")
+    
+
+config = {
+    "Upload_Key" : configReader.get('main', 'key'),
+    "Username" : configReader.get('main', 'utente'),
+    "Password" : configReader.get('main', 'password'),
+    "School_Code" : configReader.get('main', 'codice_scuola'),
+    "Download_Directory" : configReader.get('main', 'download_dir'),
+    "Group_Name" : configReader.get('main', 'group_name')
+}
+
 
 # Whatsapp Web Driver options.
 WAoptions = Options()
-WAoptions.add_argument("--window-size=1400,1000")
+WAoptions.add_argument("--window-size=1400,1000") # Of this size to make sure no mobile-size design changes happen.
 WAoptions.add_experimental_option("detach", True)
-WAoptions.add_argument("user-data-dir=C:\\Users\\Rithari\\Desktop\\Scraper\\WAProfile") # To preserve the QR code scanning.
+WAoptions.add_argument("user-data-dir=./WAProfile") # To preserve the QR code scanning.
 WAdriver = webdriver.Chrome(options=WAoptions)
 WAdriver.get("https://web.whatsapp.com")
 
 
 # Scraping Driver options.
 options = Options()
-prefs = {'download.default_directory' : "C:\\Users\\Rithari\\Documents\\argo\\", 'profile.default_content_setting_values.automatic_downloads': 1}
+prefs = {'download.default_directory' : config["Download_Directory"], 'profile.default_content_setting_values.automatic_downloads': 1}
 options.add_experimental_option('prefs', prefs)
 options.add_experimental_option("detach", True)
-options.add_argument("--window-size=1400,1000")
-options.add_argument("user-data-dir=C:\\Users\\Rithari\\Desktop\\Scraper\\ScraperProfile") # To bypass random Argo errors...
+options.add_argument("--window-size=1400,1000") # Of this size to make sure no mobile-size design changes happen.
+options.add_argument("user-data-dir=./ScraperProfile") # To bypass some Argo errors.
 driver = webdriver.Chrome(options=options)
 
 
-# Feeding the connection arguments to establish a route to the database. Sensitive data.
-assignment_db = mysql.connector.connect(
-    host = "REDACTED",
-    user = "REDACTED",
-    passwd = "REDACTED",
-    database = "REDACTED"
-)
-
-# Form data for logging in to the platform. Sensitive data.
-login_data = {
-    "utente": "REDACTED",
-    "j_password": "REDACTED",
-    "cod_scuola": "REDACTED"
-}
-
-
-# Navigate the webpage, find the login section and log in using login_data.
+# Navigate the webpage, find the login section and log in using our config file.
 def site_login():
     driver.get("https://www.argofamiglia.it/")
     driver.find_element_by_class_name("accedibutton").click()
-    driver.find_element_by_id("codice_scuola").send_keys(login_data["cod_scuola"])
-    driver.find_element_by_id("utente").send_keys(login_data["utente"])
-    driver.find_element_by_id("j_password").send_keys(login_data["j_password"])
+    driver.find_element_by_id("codice_scuola").send_keys(config["School_Code"])
+    driver.find_element_by_id("utente").send_keys(config["Username"])
+    driver.find_element_by_id("j_password").send_keys(config["Password"])
     driver.find_element_by_name("submit").click()
     
 
@@ -75,19 +84,18 @@ def scrape_assignments():
 
         # Bad handling but hopefully temporary: Only let unread fieldsets (assignments) through. 
         try:
-            assignment.find_element_by_css_selector("a:not([style='FONT-WEIGHT: bold;'])")
+           internalLink = assignment.find_element_by_css_selector("a:not([style='FONT-WEIGHT: bold;'])")
         except WebDriverException:
             continue
 
-        # Add the assignment's elements to the variables that will be submitted to a database. File is null in case there will be none in future checks.
-        db_subject = assignment.find_element_by_xpath(".//*/table/tr[1]/td[2]").text 
-        db_message = assignment.find_element_by_xpath(".//*/table/tr[2]/td[2]").text
-        db_file = None
-
-        # Due to the nature of how we check if an assignment is unread, those who demand enlistment also come through. Since only one specific one does, we filter it out temporarily.
-        if db_message == "Esercizi per sondare il grado attuale di conoscenze. (Prof. REDACTED FOR PRIVACY)":
+        # Filter out the assignments that have the "enlistment" functionality.
+        if not internalLink.text == "conferma presa visione":
             return
 
+        # Add the assignment's elements to the variables that will be submitted to the group. File is null in case there will be none in future checks.
+        subject = assignment.find_element_by_xpath(".//*/table/tr[1]/td[2]").text 
+        message = assignment.find_element_by_xpath(".//*/table/tr[2]/td[2]").text
+        file = None
 
         link_selector = "a[style='FONT-WEIGHT: bold;']"  # Used to locate any clickable links (URLs, Files).
 
@@ -96,29 +104,31 @@ def scrape_assignments():
             if not validators.url(assignment.text) and not assignment.text == '' and not assignment.text == ' ': 
                 assignment.click()
                 uploaded_file = upload_file(assignment.text)
-                db_file = uploaded_file # Our new accessble to all link will be put in place of the internal hyperlink.
+                file = uploaded_file # Our new accessble to all link will be put in place of the internal hyperlink.
             else:
                 # Due to how the platform works, even when there are none, the URL fields are always (for some reason) present and have a whitespace, we filter those out.
                 if assignment.text == '' or assignment.text == '': 
-                    db_url = None 
+                    url = None 
                 else:
-                    db_url = assignment.text
+                    url = assignment.text
 
-        whatsapp_web(db_subject, db_message, db_file, db_url)
+        internalLink.click() # Mark the assignment as read
+
+        whatsapp_web(subject, message, file, url)
 
 
-# Make a simple POST request to our file hosting service and return a new link. Sensitive data.
+# Make a simple POST request to our file hosting service and return a new link.
 def upload_file(filename):
     
     url = "https://lewd.cat/api/upload"
-    file_path = (f"C:\\Users\\Rithari\\Documents\\argo\\{filename}")
+    file_path = config["Download_Directory"] + filename
 
     # Workaround to wait for the download to finish.
     while not os.path.exists(file_path):
         time.sleep(1)
     
     multipart_form_data = {
-    'key': 'REDACTED',
+    'key': config["Upload_Key"],
     'action': (None, 'store'),
     'path': (None, '/path1')
     }
@@ -127,25 +137,14 @@ def upload_file(filename):
     r = requests.post(url, files=files, data=multipart_form_data)
     return r.json().get('url')
 
-# Update the database with our modified assignments.
-def update_db(db_subject, db_message, db_file, db_url):
-
-    cursor = assignment_db.cursor()
-    sql = "INSERT INTO Assignments (subject, message, file, url, sent) VALUES (%s, %s, %s, %s, %i)"
-    val = (db_subject, db_message, db_file, db_url, True)
-    cursor.execute(sql, val)
-
-    assignment_db.commit()
-
-
 # Post the modified assignments to our class WhatsApp group.
-def whatsapp_web(db_subject, db_message, db_file, db_url):
-    footer = "--------------------------------------------------\nSono un bot e questa azione e' avvenuta in via automatica. Per info o preoccupazioni consulta il gruppo di classe.\n Source: https://github.com/Rithari/ScuolaNext-Scraper/"
+def whatsapp_web(subject, message, file, url):
+    footer = "--------------------------------------------------\nSono un bot e questa azione e' avvenuta in via automatica."
 
 
-    text = f"Oggetto: {db_subject}\nMessaggio: {db_message}\nUrl: {db_url} \nFile: {db_file}\n\n{footer}"
+    text = f"Oggetto: {subject}\nMessaggio: {message}\nUrl: {url} \nFile: {file}\n\n{footer}"
 
-    WebDriverWait(WAdriver, 10).until(EC.element_to_be_clickable((By.XPATH, '//span[contains(@title,"Bacheca Materie")]'))).click() # Look for group name.
+    WebDriverWait(WAdriver, 10).until(EC.element_to_be_clickable((By.XPATH, f'//span[contains(@title,"{config["Group_Name"]}")]'))).click() # Look for group name.
 
     # Selenium takes new links as ENTER, thus sending them. Here we split the text into multiple parts and replace the newlines with SHIFT + ENTER (new line)
     for part in text.split('\n'):
@@ -153,7 +152,6 @@ def whatsapp_web(db_subject, db_message, db_file, db_url):
         ActionChains(WAdriver).key_down(Keys.SHIFT).key_down(Keys.ENTER).key_up(Keys.ENTER).key_up(Keys.SHIFT).perform()
 
     WebDriverWait(WAdriver, 10).until(EC.element_to_be_clickable((By.CLASS_NAME, '_35EW6'))).click() # Send the message off
-    update_db(db_subject, db_message, db_file, db_url) # Update the database.
 
 
 site_login()
