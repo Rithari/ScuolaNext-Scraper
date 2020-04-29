@@ -21,11 +21,11 @@ key =
 ```
 #### Important
 * `download_dir` must have double slashes, for example: `C:\\Users\\Rithari\\Documents\\argo\\`
-* `Group_Mame` is the whatsapp group name
+* `Group_Name` is the whatsapp group name
 * `Key` is the upload key of the file hosting service
 
-Selenium here uses the chrome driver, which you might need to download separately. Check your current's browser's version (chrome) and download its respective webdriver.
-Upon running it for the first time, two folders should appear in your directory, for the two driver profiles which are needed to keep you authenticated. 
+Selenium uses the 'chrome driver', which you might need to download separately. Check your current's browser's version (chrome) and download its respective webdriver, placing it in the same directory as the script.
+Upon running it for the first time, two folders will appear in your directory, for the two driver profiles which are needed to keep you authenticated. 
 Keep your WhatsApp Web scanner on hand, if you don't manage to scan the QR code in time, the program will crash. Simply scan it and re run the script should you fail the first time. 
 
 
