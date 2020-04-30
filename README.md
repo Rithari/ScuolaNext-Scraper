@@ -9,7 +9,7 @@ Since the file downloads are exclusive to logged-in users, the script downloads 
 Afterwards, the refined data will be sent to a database for storing purposes and then shipped off to a WhatsApp group.
 
 # Usage
-You need to add a `config.ini` file your running directory. The file must be structured as follows: 
+You need to add a `config.ini` file in your running directory. The file must be structured as follows: 
 ```
 [main]
 utente =
