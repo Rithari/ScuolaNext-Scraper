@@ -32,8 +32,8 @@ config = {
     "Username" : configReader.get('main', 'utente'),
     "Password" : configReader.get('main', 'password'),
     "School_Code" : configReader.get('main', 'codice_scuola'),
-    "Download_Directory" : configReader.get('main', 'download_dir'),
-    "Group_Name" : configReader.get('main', 'group_name')
+    "Group_Name" : configReader.get('main', 'group_name'),
+    "Download_Dir" : os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Downloads')
 }
 
 
@@ -48,7 +48,7 @@ WAdriver.get("https://web.whatsapp.com")
 
 # Scraping Driver options.
 options = Options()
-prefs = {'download.default_directory' : config["Download_Directory"], 'profile.default_content_setting_values.automatic_downloads': 1}
+prefs = {'download.default_directory' : config["Download_Dir"], 'profile.default_content_setting_values.automatic_downloads': 1}
 options.add_experimental_option('prefs', prefs)
 options.add_experimental_option("detach", True)
 options.add_argument("--window-size=1400,1000") # Of this size to make sure no mobile-size design changes happen.
@@ -119,9 +119,8 @@ def scrape_assignments():
 
 # Make a simple POST request to our file hosting service and return a new link.
 def upload_file(filename):
-    
     url = "https://lewd.cat/api/upload"
-    file_path = config["Download_Directory"] + filename
+    file_path = (rf"{config['Download_Dir']}\\{filename}")
 
     # Workaround to wait for the download to finish.
     while not os.path.exists(file_path):
