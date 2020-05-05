@@ -15,13 +15,11 @@ You need to add a `config.ini` file in your running directory. The file must be 
 utente =
 password =
 codice_scuola =
-download_dir =
 group_name =
 key =
 ```
 #### Important
-* `download_dir` must have double slashes, for example: `C:\\Users\\Rithari\\Documents\\argo\\`
-* `Group_Name` is the whatsapp group name
+* `group_name` is the whatsapp group name
 * `Key` is the upload key of the file hosting service
 
 Selenium uses the 'chrome driver', which you might need to download separately. Check your current's browser's version (chrome) and download its respective webdriver, placing it in the same directory as the script.
