@@ -81,21 +81,19 @@ def scrape_assignments():
     assignments = driver.find_elements_by_css_selector("fieldset[style*='87CEEB']")
 
     for assignment in assignments:
-
         # Bad handling but hopefully temporary: Only let unread fieldsets (assignments) through. 
         try:
            internalLink = assignment.find_element_by_css_selector("a:not([style='FONT-WEIGHT: bold;'])")
         except WebDriverException:
             continue
-
-        # Filter out the assignments that have the "enlistment" functionality.
+        # Filter out all read assignments as well as enlistment ones.
         if not internalLink.text == "conferma presa visione":
-            return
+            continue
 
         # Add the assignment's elements to the variables that will be submitted to the group. File is null in case there will be none in future checks.
         subject = assignment.find_element_by_xpath(".//*/table/tr[1]/td[2]").text 
         message = assignment.find_element_by_xpath(".//*/table/tr[2]/td[2]").text
-        file = None
+        files = []
 
         link_selector = "a[style='FONT-WEIGHT: bold;']"  # Used to locate any clickable links (URLs, Files).
 
@@ -104,7 +102,7 @@ def scrape_assignments():
             if not validators.url(assignment.text) and not assignment.text == '' and not assignment.text == ' ': 
                 assignment.click()
                 uploaded_file = upload_file(assignment.text)
-                file = uploaded_file # Our new accessble to all link will be put in place of the internal hyperlink.
+                files.append(uploaded_file) # Our new accessble to all link will be put in place of the internal hyperlink.
             else:
                 # Due to how the platform works, even when there are none, the URL fields are always (for some reason) present and have a whitespace, we filter those out.
                 if assignment.text == '' or assignment.text == '': 
@@ -114,7 +112,7 @@ def scrape_assignments():
 
         internalLink.click() # Mark the assignment as read
 
-        whatsapp_web(subject, message, file, url)
+        whatsapp_web(subject, message, files, url)
 
 
 # Make a simple POST request to our file hosting service and return a new link.
@@ -137,11 +135,15 @@ def upload_file(filename):
     return r.json().get('url')
 
 # Post the modified assignments to our class WhatsApp group.
-def whatsapp_web(subject, message, file, url):
+def whatsapp_web(subject, message, files, url):
     footer = "--------------------------------------------------\nSono un bot e questa azione e' avvenuta in via automatica."
 
+    if not files:
+        files.append("None")
 
-    text = f"Oggetto: {subject}\nMessaggio: {message}\nUrl: {url} \nFile: {file}\n\n{footer}"
+    prettyFiles = ',\n'.join(files) #Prints the array without any brackets or quotes.
+
+    text = f"Oggetto: {subject}\nMessaggio: {message}\nUrl: {url} \nFile: {prettyFiles}\n\n{footer}"
 
     WebDriverWait(WAdriver, 10).until(EC.element_to_be_clickable((By.XPATH, f'//span[contains(@title,"{config["Group_Name"]}")]'))).click() # Look for group name.
 
