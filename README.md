@@ -6,7 +6,7 @@ This project aims to bring the assignments given by teachers to all students wit
 ## How does it work?
 It's simple. The script is written in Python and uses Selenium to navigate to the assignments automatically and scrape the data from them.
 Since the file downloads are exclusive to logged-in users, the script downloads the files and uploads them to a file hosting service, making it accessible to anyone. 
-Afterwards, the refined data will be sent to a database for storing purposes and then shipped off to a WhatsApp group.
+Afterwards, the refined data will be shipped off to a WhatsApp group.
 
 # Usage
 You need to add a `config.ini` file in your running directory. The file must be structured as follows: 
