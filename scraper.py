@@ -86,7 +86,7 @@ def scrape_assignments():
            internalLink = assignment.find_element_by_css_selector("a:not([style='FONT-WEIGHT: bold;'])")
         except WebDriverException:
             continue
-        # Filter out all read assignments as well as enlistment ones.
+        # Filter out all read assignments as well as enlistment ones. ## add try catch
         if not internalLink.text == "conferma presa visione":
             continue
 
@@ -110,9 +110,10 @@ def scrape_assignments():
                 else:
                     url = assignment.text
 
-        internalLink.click() # Mark the assignment as read
+       # internalLink.click() # Mark the assignment as read
+       # time.sleep(10)
 
-        whatsapp_web(subject, message, files, url)
+        whatsapp_web(subject, message, files, url) # Send the assignments to the whatsapp group.
 
 
 # Make a simple POST request to our file hosting service and return a new link.
@@ -152,7 +153,7 @@ def whatsapp_web(subject, message, files, url):
         WebDriverWait(WAdriver, 10).until(EC.element_to_be_clickable((By.XPATH, "//div[@spellcheck='true']"))).send_keys(part)
         ActionChains(WAdriver).key_down(Keys.SHIFT).key_down(Keys.ENTER).key_up(Keys.ENTER).key_up(Keys.SHIFT).perform()
 
-    WebDriverWait(WAdriver, 10).until(EC.element_to_be_clickable((By.CLASS_NAME, '_35EW6'))).click() # Send the message off
+    WebDriverWait(WAdriver, 10).until(EC.element_to_be_clickable((By.CLASS_NAME, '_1U1xa'))).click() # Send the message off
 
 
 site_login()
