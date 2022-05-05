@@ -97,6 +97,8 @@ def scrape_assignments():
             # If the clickable element is not a valid URL and isn't a whitespace, it is a file, so we download it and call our link replacement method.
             if not validators.url(assignment.text) and not assignment.text == '' and not assignment.text == ' ':
                 assignment.click()
+                # Trip double whitespaces to avoid errors.
+                files.append(assignment.text.replace('  ', ' '))
                 uploaded_file = upload_file(assignment.text)
                 files.append(
                     uploaded_file)  # Our new accessble to all link will be put in place of the internal hyperlink.
