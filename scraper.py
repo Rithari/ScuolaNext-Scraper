@@ -56,11 +56,11 @@ driver = webdriver.Chrome(options=options)
 # Navigate the webpage, find the login section and log in using our config file.
 def site_login():
     driver.get("https://www.argofamiglia.it/")
-    driver.find_element_by_class_name("accedibutton").click()
-    driver.find_element_by_id("codice_scuola").send_keys(config["School_Code"])
-    driver.find_element_by_id("utente").send_keys(config["Username"])
-    driver.find_element_by_id("j_password").send_keys(config["Password"])
-    driver.find_element_by_name("submit").click()
+    driver.find_element(By.CLASS_NAME, "accedibutton").click()
+    driver.find_element(By.ID, "codice_scuola").send_keys(config["School_Code"])
+    driver.find_element(By.ID, "utente").send_keys(config["Username"])
+    driver.find_element(By.ID, "j_password").send_keys(config["Password"])
+    driver.find_element(By.NAME, "submit").click()
 
 
 # Navigate to the assignments panel.
@@ -74,12 +74,12 @@ def navigate_to_assignments():
 
 # Get all assignments, filter them by unread, check for any URLs and files.
 def scrape_assignments():
-    assignments = driver.find_elements_by_css_selector("fieldset[style*='87CEEB']")
+    assignments = driver.find_elements(By.CSS_SELECTOR, "fieldset[style*='87CEEB']")
 
     for assignment in assignments:
         # Bad handling but hopefully temporary: Only let unread fieldsets (assignments) through. 
         try:
-            internalLink = assignment.find_element_by_css_selector("a:not([style='FONT-WEIGHT: bold;'])")
+            internalLink = assignment.find_element(By.CSS_SELECTOR, "a:not([style='FONT-WEIGHT: bold;'])")
         except WebDriverException:
             continue
         # Filter out all read assignments as well as enlistment ones. ## add try catch
@@ -87,13 +87,13 @@ def scrape_assignments():
             continue
 
         # Add the assignment's elements to the variables that will be submitted to the group. File is null in case there will be none in future checks.
-        subject = assignment.find_element_by_xpath(".//*/table/tr[1]/td[2]").text
-        message = assignment.find_element_by_xpath(".//*/table/tr[2]/td[2]").text
+        subject = assignment.find_element(By.XPATH, ".//*/table/tr[1]/td[2]").text
+        message = assignment.find_element(By.XPATH, ".//*/table/tr[2]/td[2]").text
         files = []
 
         link_selector = "a[style='FONT-WEIGHT: bold;']"  # Used to locate any clickable links (URLs, Files).
 
-        for assignment in assignment.find_elements_by_css_selector(link_selector):
+        for assignment in assignment.find_elements(By.CSS_SELECTOR, link_selector):
             # If the clickable element is not a valid URL and isn't a whitespace, it is a file, so we download it and call our link replacement method.
             if not validators.url(assignment.text) and not assignment.text == '' and not assignment.text == ' ':
                 assignment.click()
