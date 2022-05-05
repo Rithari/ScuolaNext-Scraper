@@ -116,7 +116,7 @@ def scrape_assignments():
 # Make a simple POST request to our file hosting service and return a new link.
 def upload_file(filename):
     url = config["filehosting_website_url"]
-    file_path = (rf"{config['Download_Dir']}\\{filename}")
+    file_path = rf"{config['Download_Dir']}\\{filename}"
 
     # Workaround to wait for the download to finish.
     while not os.path.exists(file_path):
