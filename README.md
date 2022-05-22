@@ -17,6 +17,7 @@ password =
 codice_scuola =
 group_name =
 key =
+filehosting_website_url = "https://kyot.me/api/upload"
 ```
 #### Important
 * `group_name` is the whatsapp group name
